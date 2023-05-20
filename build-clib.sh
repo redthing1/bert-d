@@ -11,7 +11,7 @@ HOST="bert-d"
 LIB_NAME="bert"
 SOURCETREE_URL="https://github.com/skeskinen/bert.cpp"
 SOURCETREE_DIR="bertcpp_source"
-SOURCETREE_BRANCH="master"
+SOURCETREE_BRANCH="cd2170ded1f4d245080874836e75b09972737089"
 LIB_FILE_1="libbert.a"
 LIB_FILE_2="libggml.a"
 
