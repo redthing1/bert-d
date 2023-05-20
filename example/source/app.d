@@ -1,45 +1,62 @@
 import std.stdio;
+import std.getopt;
+import std.string;
+import std.conv;
 
 import bert.bert;
 import bert.ggml;
 import std.container.array;
 
+struct Options {
+	string model;
+	string prompt;
+	int n_threads = 0;
+}
+
 int main(string[] args) {
-	const int64_t t_main_start_us = ggml_time_us();
+	enum __func__ = "main";
+	const long t_main_start_us = ggml_time_us();
 
-	bert_params params;
+	Options params;
 	params.model = "../../models/all-MiniLM-L6-v2/ggml-model-f32.bin";
+	params.prompt = "test prompt";
 
-	if (bert_params_parse(argc, argv, params) == false) {
-		return 1;
+	auto help_info = getopt(args, "m", &params.model, "p", &params.prompt, "n", &params.n_threads);
+	if (help_info.helpWanted) {
+		defaultGetoptPrinter("bert-d example", help_info.options);
+		return 0;
 	}
 
-	int64_t t_load_us = 0;
+	long t_load_us = 0;
 
 	bert_ctx* bctx;
 
 	// load the model
 	{
-		const int64_t t_start_us = ggml_time_us();
+		const long t_start_us = ggml_time_us();
 
-		if ((bctx = bert_load_from_file(params.model)) == nullptr) {
-			fwritef(stderr, "%s: failed to load model from '%s'\n", __func__, params.model);
+		if ((bctx = bert_load_from_file(params.model.toStringz)) == null) {
+			// fwritef(stderr, "%s: failed to load model from '%s'\n", __func__, params.model);
+			stderr.writef("%s: failed to load model from '%s'\n", __func__, params.model);
 			return 1;
 		}
 
 		t_load_us = ggml_time_us() - t_start_us;
 	}
 
-	int64_t t_eval_us = 0;
-	int64_t t_start_us = ggml_time_us();
+	long t_eval_us = 0;
+	long t_start_us = ggml_time_us();
 	int N = bert_n_max_tokens(bctx);
 	// tokenize the prompt
-	Array!bert_vocab_id tokens(N);
+	// Array!bert_vocab_id tokens(N);
+	Array!bert_vocab_id tokens;
+	tokens.reserve(N);
 	int n_tokens;
-	bert_tokenize(bctx, params.prompt, tokens.data(), &n_tokens, N);
-	tokens.resize(n_tokens);
+	bert_tokenize(bctx, params.prompt.toStringz, cast(int*) tokens.data, &n_tokens, N);
+	// tokens.resize(n_tokens);
+	tokens.length = n_tokens;
 
-	writef("%s: number of tokens in prompt = %zu\n", __func__, tokens.size());
+	writef("%s: number of tokens in prompt = %d\n", __func__, tokens.length);
 	writef("\n");
 
 	writef("[");
@@ -49,10 +66,13 @@ int main(string[] args) {
 	writef("]\n");
 
 	foreach (tok; tokens) {
-		writef("%d -> %s\n", tok, bert_vocab_id_to_token(bctx, tok));
+		writef("%d -> %s\n", tok, bert_vocab_id_to_token(bctx, tok).to!string);
 	}
-	Array!float embeddings(bert_n_embd(bctx));
-	bert_eval(bctx, params.n_threads, tokens.data(), n_tokens, embeddings.data());
+	// Array!float embeddings(bert_n_embd(bctx));
+	Array!float embeddings;
+	embeddings.reserve(bert_n_embd(bctx));
+
+	bert_eval(bctx, params.n_threads, cast(int*) tokens.data, n_tokens, cast(float*) embeddings.data);
 	t_eval_us += ggml_time_us() - t_start_us;
 
 	writef("[");
@@ -63,13 +83,13 @@ int main(string[] args) {
 
 	// report timing
 	{
-		const int64_t t_main_end_us = ggml_time_us();
+		const long t_main_end_us = ggml_time_us();
 
 		writef("\n\n");
 		//writef("%s: mem per token = %8zu bytes\n", __func__, mem_per_token);
 		writef("%s:     load time = %8.2f ms\n", __func__, t_load_us / 1000.0f);
 		writef("%s:  eval time = %8.2f ms / %.2f ms per token\n", __func__,
-			t_eval_us / 1000.0f, t_eval_us / 1000.0f / tokens.size());
+			t_eval_us / 1000.0f, t_eval_us / 1000.0f / tokens.length);
 		writef("%s:    total time = %8.2f ms\n", __func__, (t_main_end_us - t_main_start_us) / 1000.0f);
 	}
 

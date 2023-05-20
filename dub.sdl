@@ -7,6 +7,6 @@ targetType "library"
 
 configuration "default" {
     # on posix platforms, link to staticlibrary
-    lflags "-L$PACKAGE_DIR" "$PACKAGE_DIR/libbert.a" "$PACKAGE_DIR/libggml.a" platform="posix"
+    lflags "-L$PACKAGE_DIR" "$PACKAGE_DIR/libbert.a" "$PACKAGE_DIR/libggml.a" "-lstdc++" platform="posix"
     preGenerateCommands "bash $PACKAGE_DIR/build-clib.sh" platform="posix"
 }

@@ -1,4 +1,4 @@
-module bert.bert.bert;
+module bert.bert;
 
 extern (C) @nogc nothrow:
 

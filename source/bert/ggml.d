@@ -1,4 +1,4 @@
-module bert.ggml.ggml;
+module bert.ggml;
 
 import core.stdc.config;
 
