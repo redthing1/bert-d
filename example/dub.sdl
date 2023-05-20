@@ -3,5 +3,5 @@ description "A minimal D application."
 authors "no"
 copyright "Copyright © 2023, no"
 license "proprietary"
-
 dependency "bert-d" path=".."
+dependency "mir-cpuid" version="~>1.2.10"

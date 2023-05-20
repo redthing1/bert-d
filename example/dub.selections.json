@@ -1,0 +1,8 @@
+{
+	"fileVersion": 1,
+	"versions": {
+		"bert-d": {"path":".."},
+		"mir-core": "1.5.5",
+		"mir-cpuid": "1.2.10"
+	}
+}

@@ -2,10 +2,10 @@ import std.stdio;
 import std.getopt;
 import std.string;
 import std.conv;
+import cpuid.unified: cores;
 
 import bert.bert;
 import bert.ggml;
-import std.container.array;
 
 struct Options {
 	string model;
@@ -20,8 +20,9 @@ int main(string[] args) {
 	Options params;
 	params.model = "../../models/all-MiniLM-L6-v2/ggml-model-f32.bin";
 	params.prompt = "test prompt";
+	params.n_threads = cores;
 
-	auto help_info = getopt(args, "m", &params.model, "p", &params.prompt, "n", &params.n_threads);
+	auto help_info = getopt(args, "m", &params.model, "p", &params.prompt, "t", &params.n_threads);
 	if (help_info.helpWanted) {
 		defaultGetoptPrinter("bert-d example", help_info.options);
 		return 0;
@@ -48,13 +49,15 @@ int main(string[] args) {
 	long t_start_us = ggml_time_us();
 	int N = bert_n_max_tokens(bctx);
 	// tokenize the prompt
-	// Array!bert_vocab_id tokens(N);
-	Array!bert_vocab_id tokens;
-	tokens.reserve(N);
 	int n_tokens;
-	bert_tokenize(bctx, params.prompt.toStringz, cast(int*) tokens.data, &n_tokens, N);
-	// tokens.resize(n_tokens);
+	bert_vocab_id[] tokens;
+	tokens.length = N;
+	bert_tokenize(bctx, params.prompt.toStringz, tokens.ptr, &n_tokens, N);
 	tokens.length = n_tokens;
+
+	writef("%s: model: %s\n", __func__, params.model);
+	writef("%s: prompt: %s\n", __func__, params.prompt);
+	writef("%s: n_threads: %d\n", __func__, params.n_threads);
 
 	writef("%s: number of tokens in prompt = %d\n", __func__, tokens.length);
 	writef("\n");
@@ -68,11 +71,11 @@ int main(string[] args) {
 	foreach (tok; tokens) {
 		writef("%d -> %s\n", tok, bert_vocab_id_to_token(bctx, tok).to!string);
 	}
-	// Array!float embeddings(bert_n_embd(bctx));
-	Array!float embeddings;
-	embeddings.reserve(bert_n_embd(bctx));
+	float[] embeddings;
+	embeddings.length = bert_n_embd(bctx);
 
-	bert_eval(bctx, params.n_threads, cast(int*) tokens.data, n_tokens, cast(float*) embeddings.data);
+	writefln("evaluating...");
+	bert_eval(bctx, params.n_threads, tokens.ptr, n_tokens, embeddings.ptr);
 	t_eval_us += ggml_time_us() - t_start_us;
 
 	writef("[");
