@@ -1,0 +1,12 @@
+name "bert-d"
+description "D bindings to bert.cpp"
+authors "redthing1"
+copyright "Copyright © 2023, redthing1"
+license "proprietary"
+targetType "library"
+
+configuration "default" {
+    # on posix platforms, link to staticlibrary
+    lflags "-L$PACKAGE_DIR" "$PACKAGE_DIR/libbert.a" "$PACKAGE_DIR/libggml.a" platform="posix"
+    preGenerateCommands "bash $PACKAGE_DIR/build-clib.sh" platform="posix"
+}
